@@ -1,0 +1,43 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "npm",
+      "script": "build",
+      "problemMatcher": ["$tsc"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "label": "npm: build - compile to dist",
+      "detail": "Compiles the project to the dist folder"
+    },
+    {
+      "type": "npm",
+      "script": "watch",
+      "problemMatcher": "$ts-webpack-watch",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "never",
+        "group": "watchers"
+      },
+      "group": "build"
+    },
+    {
+      "type": "npm",
+      "script": "watch-tests",
+      "problemMatcher": "$tsc-watch",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "never",
+        "group": "watchers"
+      },
+      "group": "build"
+    },
+    {
+      "label": "tasks: watch-all",
+      "dependsOn": ["npm: watch", "npm: watch-tests"],
+      "problemMatcher": []
+    }
+  ]
+}

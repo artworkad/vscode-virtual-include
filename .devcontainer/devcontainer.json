@@ -1,0 +1,22 @@
+{
+  "name": "VSCode Extension Development",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-typescript-tslint-plugin",
+        "ms-vscode.extension-test-runner"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "postCreateCommand": "npm install",
+  "remoteUser": "node",
+  "workspaceFolder": "/workspaces/vscode-virtual-include"
+}
