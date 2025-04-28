@@ -22,6 +22,8 @@ automatically updates content when source files change.
 - ✅ **Visual Feedback**: Error indicators for missing files and status bar
   integration
 - ✅ **Multiple Languages**: Adapts to each language's comment style
+- ✅ **Navigation Links**: Code lens above include directives to quickly open
+  source files
 
 ## Installation
 
@@ -143,6 +145,25 @@ The extension adds a status bar item that shows the current state:
 - ⚠️ Virtual Include (X issues): When there are problems with includes
 
 You can click the status bar item to manually trigger include processing.
+
+### Code Lens
+
+The extension adds a clickable code lens above each virtual include directive.
+When you hover over an include directive, you'll see an "Open included file"
+link that allows you to quickly navigate to the source file without having to
+manually locate it.
+
+This feature makes it easy to:
+
+- Jump directly to source files when working with includes
+- Navigate between related files in your project
+- Quickly check the content of included files
+
+The code lens can be disabled in settings if preferred:
+
+```json
+"virtualInclude.showCodeLens": false
+```
 
 ### Notifications
 

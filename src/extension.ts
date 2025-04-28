@@ -1,5 +1,9 @@
 import * as vscode from "vscode";
 import { VirtualIncludeManager } from "./virtual-include-manager";
+import {
+  VirtualIncludeCodeLensProvider,
+  openIncludedFile,
+} from "./code-lens-provider";
 
 /**
  * The extension file serves as the entry point for the Virtual Include extension.
@@ -38,8 +42,51 @@ export function activate(context: vscode.ExtensionContext) {
     },
   );
 
+  // Register the command to open included files
+  const openIncludedFileCommand = vscode.commands.registerCommand(
+    "virtualInclude.openIncludedFile",
+    openIncludedFile,
+  );
+
+  // Register the code lens provider for all supported languages
+  const supportedLanguages = [
+    "javascript",
+    "typescript",
+    "python",
+    "ruby",
+    "powershell",
+    "shellscript",
+    "csharp",
+    "java",
+    "c",
+    "cpp",
+    "go",
+    "rust",
+    "php",
+    "perl",
+    "lua",
+    "sql",
+    "yaml",
+    "html",
+    "xml",
+    "css",
+    "markdown",
+    "plaintext",
+  ];
+
+  const codeLensProvider = new VirtualIncludeCodeLensProvider();
+  const codeLensRegistration = vscode.languages.registerCodeLensProvider(
+    supportedLanguages.map((lang) => ({ language: lang })),
+    codeLensProvider,
+  );
+
   // Add disposables to context
-  context.subscriptions.push(processCommand, manager);
+  context.subscriptions.push(
+    processCommand,
+    openIncludedFileCommand,
+    codeLensRegistration,
+    manager,
+  );
 
   // Process open documents on startup with a delay to ensure VSCode is fully initialized
   setTimeout(() => {

@@ -51,6 +51,10 @@
       {
         "command": "virtualInclude.process",
         "title": "Process Virtual Includes"
+      },
+      {
+        "command": "virtualInclude.openIncludedFile",
+        "title": "Open Included File"
       }
     ],
     "menus": {
@@ -95,6 +99,11 @@
           "type": "boolean",
           "default": true,
           "description": "Automatically detect language for includes based on file extension"
+        },
+        "virtualInclude.showCodeLens": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show code lens above virtual include directives to quickly open included files"
         },
         "virtualInclude.languageOverrides": {
           "type": "array",

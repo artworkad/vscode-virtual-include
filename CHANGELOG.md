@@ -20,6 +20,7 @@ and this project adheres to
 - Added Prettier configuration and applied format to all files
 - Added cross-language include support for including content in different
   languages
+- Added Code lens above include directives to quickly open source files
 
 ## [1.0.1] - 2025-04-25
 
