@@ -8,14 +8,19 @@ Include content from other files with automatic updates and edit protection.
 
 ## Overview
 
-Virtual Include is a powerful VS Code extension that allows you to include content from other files directly in your code. Unlike traditional includes which require preprocessing, Virtual Include works with any language and automatically updates content when source files change.
+Virtual Include is a powerful VS Code extension that allows you to include
+content from other files directly in your code. Unlike traditional includes
+which require preprocessing, Virtual Include works with any language and
+automatically updates content when source files change.
 
 ## Features
 
-- ✅ **Language Agnostic**: Works with JavaScript, TypeScript, Python, Ruby, C#, Java, HTML, CSS, and more
+- ✅ **Language Agnostic**: Works with JavaScript, TypeScript, Python, Ruby, C#,
+  Java, HTML, CSS, and more
 - ✅ **Live Updates**: Content automatically updates when source files change
 - ✅ **Protected Content**: Included content is protected from accidental edits
-- ✅ **Visual Feedback**: Error indicators for missing files and status bar integration
+- ✅ **Visual Feedback**: Error indicators for missing files and status bar
+  integration
 - ✅ **Multiple Languages**: Adapts to each language's comment style
 
 ## Installation
@@ -29,11 +34,14 @@ Virtual Include is a powerful VS Code extension that allows you to include conte
 
 ### Basic Usage
 
-1. Add a virtual include directive in your code using your language's comment style
+1. Add a virtual include directive in your code using your language's comment
+   style
 2. Reference the file you want to include
 3. Save the document
 
-The extension will automatically process the include directive and insert the content from the referenced file. The included content is protected from edits - if you want to change it, edit the source file instead!
+The extension will automatically process the include directive and insert the
+content from the referenced file. The included content is protected from edits -
+if you want to change it, edit the source file instead!
 
 ### Include Directive Format
 
@@ -46,7 +54,8 @@ The include directive follows this format:
 Where:
 
 - `[comment style]` is the comment syntax for your language
-- `[path]` is the path to the file you want to include (relative to the current file or absolute)
+- `[path]` is the path to the file you want to include (relative to the current
+  file or absolute)
 
 ### Examples
 
@@ -88,7 +97,9 @@ Where:
 
 ### After Processing
 
-When you save the file, the extension will process the include directive and insert the content from the referenced file. The included content will be wrapped between start and end markers:
+When you save the file, the extension will process the include directive and
+insert the content from the referenced file. The included content will be
+wrapped between start and end markers:
 
 ```javascript
 // virtualInclude 'utils/helper.js'
@@ -101,7 +112,8 @@ function helperFunction() {
 
 ## Indentation
 
-The extension automatically preserves the indentation from the include directive line, so included content will match your code style:
+The extension automatically preserves the indentation from the include directive
+line, so included content will match your code style:
 
 ```javascript
 function example() {
@@ -116,7 +128,9 @@ function example() {
 
 ## Error Handling
 
-If a referenced file cannot be found, the extension will show an error indicator (red squiggly line) under the include directive. Hovering over it will show the specific error message.
+If a referenced file cannot be found, the extension will show an error indicator
+(red squiggly line) under the include directive. Hovering over it will show the
+specific error message.
 
 ## User Interface
 
@@ -132,7 +146,8 @@ You can click the status bar item to manually trigger include processing.
 
 ### Notifications
 
-When a source file changes, the extension will show a notification with options to:
+When a source file changes, the extension will show a notification with options
+to:
 
 - Show affected files
 - Save all affected files
@@ -156,16 +171,20 @@ You can customize the extension's behavior through VS Code settings:
 
 ### Available Settings
 
-- `virtualInclude.defaultCommentStyle`: Default comment style for languages without specific settings (defaults to `#`)
-- `virtualInclude.languageSettings`: Override settings for specific languages with custom patterns and markers
+- `virtualInclude.defaultCommentStyle`: Default comment style for languages
+  without specific settings (defaults to `#`)
+- `virtualInclude.languageSettings`: Override settings for specific languages
+  with custom patterns and markers
 
 ## Advanced Usage
 
 ### Nested Includes
 
-The extension handles nested includes in a special way to prevent infinite inclusion loops:
+The extension handles nested includes in a special way to prevent infinite
+inclusion loops:
 
-- When a file (A) includes another file (B) that itself contains include directives
+- When a file (A) includes another file (B) that itself contains include
+  directives
 - The include directives from file B are neutralized when inserted into file A
 - These nested include directives are transformed to a non-processing format:
 
@@ -173,16 +192,20 @@ The extension handles nested includes in a special way to prevent infinite inclu
   // virtualInclude 'file.js'  →  // virtualInclude-nested (edit source file to modify) 'file.js'
   ```
 
-**Why this happens**: This prevents an infinite cycle of inclusions that would cause the editor to freeze or crash. Without this protection, include directives in included content would be processed again and again with each save.
+**Why this happens**: This prevents an infinite cycle of inclusions that would
+cause the editor to freeze or crash. Without this protection, include directives
+in included content would be processed again and again with each save.
 
-**How to work with nested includes**: If you need to modify the content from a nested include, you should:
+**How to work with nested includes**: If you need to modify the content from a
+nested include, you should:
 
 1. Open and edit the source file directly
 2. Save the source file - all files including it will be automatically updated
 
 ### Custom Include Patterns
 
-You can customize the include directive pattern, start marker, and end marker for each language using the settings:
+You can customize the include directive pattern, start marker, and end marker
+for each language using the settings:
 
 ```json
 "virtualInclude.languageSettings": {
@@ -247,7 +270,8 @@ Include common HTML templates:
 
 The extension contributes the following commands:
 
-- **Process Virtual Includes**: Manually process all virtual includes in the current file
+- **Process Virtual Includes**: Manually process all virtual includes in the
+  current file
 
 You can access this command from:
 
@@ -259,15 +283,18 @@ You can access this command from:
 
 ### Issue: Include is not updating when source file changes
 
-**Solution**: Make sure file watchers are enabled in your environment. Some network drives may not support file watching.
+**Solution**: Make sure file watchers are enabled in your environment. Some
+network drives may not support file watching.
 
 ### Issue: Content is not being included correctly
 
-**Solution**: Check that the path is correct and relative to the current file, not the workspace root.
+**Solution**: Check that the path is correct and relative to the current file,
+not the workspace root.
 
 ### Issue: Start/end markers are missing
 
-**Solution**: Try manually saving the file to trigger include processing, or use the "Process Virtual Includes" command from the context menu.
+**Solution**: Try manually saving the file to trigger include processing, or use
+the "Process Virtual Includes" command from the context menu.
 
 ## Requirements
 
@@ -279,4 +306,5 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Publisher
 
-Published by [artworkad](https://marketplace.visualstudio.com/publishers/artworkad)
+Published by
+[artworkad](https://marketplace.visualstudio.com/publishers/artworkad)

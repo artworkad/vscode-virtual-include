@@ -55,13 +55,13 @@ export class DocumentProcessor {
       const documentKey = document.uri.toString();
 
       const languageSettings = LanguageService.getLanguageSettings(
-        document.languageId
+        document.languageId,
       );
 
       // Clear existing watchers for this document
       if (this._manager.documentWatchers.has(documentKey)) {
         for (const watcher of this._manager.documentWatchers.get(
-          documentKey
+          documentKey,
         )!) {
           watcher.dispose();
         }
@@ -88,12 +88,12 @@ export class DocumentProcessor {
           if (this._isSelfInclude(document, filePath)) {
             // Log the issue
             console.warn(
-              `Preventing self-include in file: ${document.uri.fsPath}`
+              `Preventing self-include in file: ${document.uri.fsPath}`,
             );
 
             // Show a warning to the user
             this._manager.uiHandler.showWarningMessage(
-              `Cannot include a file in itself: ${filePath}`
+              `Cannot include a file in itself: ${filePath}`,
             );
 
             // Skip processing this include
@@ -111,7 +111,7 @@ export class DocumentProcessor {
               if (!this._manager.sourceToDocuments.has(resolvedPath)) {
                 this._manager.sourceToDocuments.set(
                   resolvedPath,
-                  new Set<string>()
+                  new Set<string>(),
                 );
               }
               this._manager.sourceToDocuments
@@ -154,32 +154,32 @@ export class DocumentProcessor {
                     .map((contentLine) =>
                       contentLine.length > 0
                         ? indentation + contentLine
-                        : contentLine
+                        : contentLine,
                     )
                     .join("\n");
 
                   // If content has changed, mark for update
                   if (currentContent !== indentedContent) {
                     console.log(
-                      `Content changed for include at line ${i}, will update`
+                      `Content changed for include at line ${i}, will update`,
                     );
                     needsEdit = true;
                   } else {
                     console.log(
-                      `Content unchanged for include at line ${i}, no update needed`
+                      `Content unchanged for include at line ${i}, no update needed`,
                     );
                   }
                 } else {
                   // End marker missing, need to fix
                   console.log(
-                    `End marker missing for include at line ${i}, will fix`
+                    `End marker missing for include at line ${i}, will fix`,
                   );
                   needsEdit = true;
                 }
               } else {
                 // Not expanded yet, mark for expansion
                 console.log(
-                  `Include at line ${i} not yet expanded, will expand`
+                  `Include at line ${i} not yet expanded, will expand`,
                 );
                 needsEdit = true;
               }
@@ -190,13 +190,13 @@ export class DocumentProcessor {
               watchers.push(watcher);
             } else {
               this._manager.uiHandler.showErrorMessage(
-                `File not found: ${resolvedPath}`
+                `File not found: ${resolvedPath}`,
               );
             }
           } catch (error) {
             console.error(`Error processing include at line ${i}: ${error}`);
             this._manager.uiHandler.showErrorMessage(
-              `Error processing include: ${error}`
+              `Error processing include: ${error}`,
             );
           }
         }
@@ -208,7 +208,7 @@ export class DocumentProcessor {
       // If we need to update the document, do it now
       if (needsEdit) {
         console.log(
-          `Document ${document.uri} needs updates, applying changes...`
+          `Document ${document.uri} needs updates, applying changes...`,
         );
         await this.updateDocument(editor, includeMap);
       } else {
@@ -243,7 +243,7 @@ export class DocumentProcessor {
    */
   private _neutralizeNestedIncludes(
     content: string,
-    languageSettings: LanguageSettings
+    languageSettings: LanguageSettings,
   ): string {
     // Create a regex based on the language-specific include directive pattern
     const includeRegex = new RegExp(languageSettings.includeDirectivePattern);
@@ -269,11 +269,11 @@ export class DocumentProcessor {
         // Only replace the exact directive pattern, not any occurrence of "virtualInclude"
         const transformedLine = line.replace(
           /(\s*\S+\s+)virtualInclude(\s+["'].+?["'])/,
-          "$1virtualInclude-nested (edit source file to modify)$2"
+          "$1virtualInclude-nested (edit source file to modify)$2",
         );
 
         console.log(
-          `Neutralized nested include directive: "${line}" -> "${transformedLine}"`
+          `Neutralized nested include directive: "${line}" -> "${transformedLine}"`,
         );
         return transformedLine;
       }
@@ -285,7 +285,7 @@ export class DocumentProcessor {
 
   public async updateDocument(
     editor: vscode.TextEditor,
-    includeMap: Map<number, string>
+    includeMap: Map<number, string>,
   ): Promise<void> {
     try {
       // Set the flag to disable edit protection during our update
@@ -302,7 +302,7 @@ export class DocumentProcessor {
       const lines = text.split("\n");
 
       const languageSettings = LanguageService.getLanguageSettings(
-        document.languageId
+        document.languageId,
       );
 
       // We'll track line offset as we add/remove lines
@@ -310,7 +310,7 @@ export class DocumentProcessor {
 
       // Process each include in order (sort by line number to prevent issues)
       for (const [lineNumber, content] of [...includeMap.entries()].sort(
-        (a, b) => a[0] - b[0]
+        (a, b) => a[0] - b[0],
       )) {
         const adjustedLine = lineNumber + lineOffset;
 
@@ -333,7 +333,7 @@ export class DocumentProcessor {
         // Neutralize any nested include directives in the content
         indentedContent = this._neutralizeNestedIncludes(
           indentedContent,
-          languageSettings
+          languageSettings,
         );
         const indentedStartMarker =
           indentation + languageSettings.startMarkerTemplate;
@@ -374,7 +374,7 @@ export class DocumentProcessor {
             workspaceEdit.replace(
               document.uri,
               new vscode.Range(startPos, endPos),
-              `${indentedStartMarker}\n${indentedContent}\n${indentedEndMarker}\n`
+              `${indentedStartMarker}\n${indentedContent}\n${indentedEndMarker}\n`,
             );
 
             // Apply the edit
@@ -382,12 +382,12 @@ export class DocumentProcessor {
 
             // Update line offset - should remain the same since we're replacing whole block
             console.log(
-              `Completely replaced include block from line ${nextLineIndex} to ${endLine}`
+              `Completely replaced include block from line ${nextLineIndex} to ${endLine}`,
             );
           } else {
             // Start marker exists but end marker is missing
             console.log(
-              `End marker missing for include at line ${adjustedLine}, replacing section`
+              `End marker missing for include at line ${adjustedLine}, replacing section`,
             );
 
             // Find a reasonable place to end our replacement (next 20 lines max)
@@ -410,7 +410,7 @@ export class DocumentProcessor {
             workspaceEdit.replace(
               document.uri,
               new vscode.Range(startPos, endPos),
-              `${indentedStartMarker}\n${indentedContent}\n${indentedEndMarker}\n`
+              `${indentedStartMarker}\n${indentedContent}\n${indentedEndMarker}\n`,
             );
 
             // Apply the edit
@@ -422,7 +422,7 @@ export class DocumentProcessor {
               indentedContent.split("\n").length -
               (replacementEndLine - nextLineIndex);
             console.log(
-              `Replaced partial include block from ${nextLineIndex} to ${replacementEndLine}`
+              `Replaced partial include block from ${nextLineIndex} to ${replacementEndLine}`,
             );
           }
         } else {
@@ -434,14 +434,14 @@ export class DocumentProcessor {
           const currentLineLength = includeLine.length;
           const endOfLine = new vscode.Position(
             adjustedLine,
-            currentLineLength
+            currentLineLength,
           );
 
           // Insert a newline followed by our markers and content
           workspaceEdit.insert(
             document.uri,
             endOfLine,
-            `\n${indentedStartMarker}\n${indentedContent}\n${indentedEndMarker}\n`
+            `\n${indentedStartMarker}\n${indentedContent}\n${indentedEndMarker}\n`,
           );
 
           // Apply the edit
@@ -454,7 +454,7 @@ export class DocumentProcessor {
     } catch (error) {
       console.error(`Error in updateDocument: ${error}`);
       this._manager.uiHandler.showErrorMessage(
-        `Extension error in updateDocument: ${error}`
+        `Extension error in updateDocument: ${error}`,
       );
     } finally {
       // Reset the flag when done, regardless of success or failure
@@ -474,7 +474,7 @@ export class DocumentProcessor {
    */
   private _resolveIncludePath(
     document: vscode.TextDocument,
-    includePath: string
+    includePath: string,
   ): string {
     if (path.isAbsolute(includePath)) {
       return includePath;
@@ -493,7 +493,7 @@ export class DocumentProcessor {
    */
   private _isSelfInclude(
     document: vscode.TextDocument,
-    includePath: string
+    includePath: string,
   ): boolean {
     // Always resolve the include path, even if it looks like an absolute path
     const resolvedIncludePath = this._resolveIncludePath(document, includePath);

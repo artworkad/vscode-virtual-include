@@ -1,0 +1,9 @@
+**/node_modules/
+**/dist/
+**/.vs/
+tsconfig.lsif.json
+*.lsif
+*.db
+*.tsbuildinfo
+**/test-workspace/
+**/.vscode-test/

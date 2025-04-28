@@ -1,18 +1,18 @@
-import * as vscode from 'vscode';
-import { VirtualIncludeManager } from './virtual-include-manager';
-import { LanguageService } from './language-service';
+import * as vscode from "vscode";
+import { VirtualIncludeManager } from "./virtual-include-manager";
+import { LanguageService } from "./language-service";
 
 /**
- * The edit-protection module is responsible for preventing users from editing content 
- * that has been virtually included. It prevents the editing of included content by detecting 
- * when edits affect protected regions and either blocking those edits or immediately 
- * restoring the content. This ensures the integrity of included content while still allowing users 
+ * The edit-protection module is responsible for preventing users from editing content
+ * that has been virtually included. It prevents the editing of included content by detecting
+ * when edits affect protected regions and either blocking those edits or immediately
+ * restoring the content. This ensures the integrity of included content while still allowing users
  * to edit source files.
- * 
+ *
  * HOW IT WORKS IN DETAIL
- * 
+ *
  * When a document is edited, the EditProtection component:
- * 
+ *
  * - First checks if the edit is part of a programmatic update, and allows it if so
  * - Otherwise, identifies all protected regions in the document (between start/end markers)
  * - For each edit, checks if it overlaps with any protected region
@@ -20,41 +20,45 @@ import { LanguageService } from './language-service';
  *   - Shows a warning message telling the user to edit the source file instead
  *   - Flags the document for immediate reprocessing
  *   - Quickly restores the content that was edited
- * 
- * The immediate reprocessing ensures that protected content is instantly restored if a user tries 
- * to modify it, providing clear feedback without disrupting the document state. This happens with 
+ *
+ * The immediate reprocessing ensures that protected content is instantly restored if a user tries
+ * to modify it, providing clear feedback without disrupting the document state. This happens with
  * a small delay (10ms) to ensure the edit is fully processed before restoration.
- * 
- * Additionally, when a document is saved, the component checks for and fixes any incomplete protected 
- * regions, ensuring the document stays in a valid state. This protection mechanism is crucial for 
+ *
+ * Additionally, when a document is saved, the component checks for and fixes any incomplete protected
+ * regions, ensuring the document stays in a valid state. This protection mechanism is crucial for
  * maintaining the integrity of included content while providing a good user experience with clear feedback.
  */
 export class EditProtection {
-  constructor(private _manager: VirtualIncludeManager) { }
+  constructor(private _manager: VirtualIncludeManager) {}
 
   /**
    * Examines document changes to detect edits to protected regions:
-   * 
+   *
    * 1. Called each time a document is changed
    * 2. Identifies all protected regions in the document
    * 3. Checks if any edits affect these regions
    * 4. Prevents edits and shows appropriate warnings
    * 5. Immediately restores content when protected regions are edited
-   * 
-   * @param e 
+   *
+   * @param e
    * @returns Promise<void>
    */
-  public async handleProtectedEdits(e: vscode.TextDocumentChangeEvent): Promise<void> {
+  public async handleProtectedEdits(
+    e: vscode.TextDocumentChangeEvent,
+  ): Promise<void> {
     // Skip protection check if we're performing a programmatic update
     if (this._manager.isPerformingUpdate) {
       return;
     }
 
-    const languageSettings = LanguageService.getLanguageSettings(e.document.languageId);
+    const languageSettings = LanguageService.getLanguageSettings(
+      e.document.languageId,
+    );
 
     const document = e.document;
     const text = document.getText();
-    const lines = text.split('\n');
+    const lines = text.split("\n");
 
     // Track protected regions
     const protectedRegions: { start: number; end: number }[] = [];
@@ -68,7 +72,10 @@ export class EditProtection {
       if (lineTrimmed === languageSettings.startMarkerTemplate.trim()) {
         inProtectedRegion = true;
         currentStart = i;
-      } else if (lineTrimmed === languageSettings.endMarkerTemplate.trim() && inProtectedRegion) {
+      } else if (
+        lineTrimmed === languageSettings.endMarkerTemplate.trim() &&
+        inProtectedRegion
+      ) {
         inProtectedRegion = false;
         // Add the complete region to our list
         if (currentStart !== -1) {
@@ -97,11 +104,17 @@ export class EditProtection {
           const protectedContentEnd = region.end - 1;
 
           // Check for overlap with protected content
-          if ((startLine >= protectedContentStart && startLine <= protectedContentEnd) ||
-            (endLine >= protectedContentStart && endLine <= protectedContentEnd) ||
-            (startLine < protectedContentStart && endLine > protectedContentEnd)) {
+          if (
+            (startLine >= protectedContentStart &&
+              startLine <= protectedContentEnd) ||
+            (endLine >= protectedContentStart &&
+              endLine <= protectedContentEnd) ||
+            (startLine < protectedContentStart && endLine > protectedContentEnd)
+          ) {
             // Cancel the edit by showing a message
-            vscode.window.showWarningMessage('Cannot edit protected virtual include content. Edit the source file instead.');
+            vscode.window.showWarningMessage(
+              "Cannot edit protected virtual include content. Edit the source file instead.",
+            );
 
             // Flag that we need to reprocess immediately to restore content
             needsImmedateReprocess = true;
@@ -135,20 +148,24 @@ export class EditProtection {
 
   /**
    * Fixes any incomplete protected regions during save:
-   * 
+   *
    * 1. Checks for missing end markers in protected regions
    * 2. Adds missing markers to ensure the document structure is valid
    * 3. Maintains proper indentation for added markers
-   * 
-   * @param document 
+   *
+   * @param document
    * @returns Promise<vscode.TextEdit[]>
    */
-  public async preventProtectedEdits(document: vscode.TextDocument): Promise<vscode.TextEdit[]> {
+  public async preventProtectedEdits(
+    document: vscode.TextDocument,
+  ): Promise<vscode.TextEdit[]> {
     const text = document.getText();
-    const lines = text.split('\n');
+    const lines = text.split("\n");
     const edits: vscode.TextEdit[] = [];
 
-    const languageSettings = LanguageService.getLanguageSettings(document.languageId);
+    const languageSettings = LanguageService.getLanguageSettings(
+      document.languageId,
+    );
 
     // Find protected regions
     let inProtectedRegion = false;
@@ -171,13 +188,16 @@ export class EditProtection {
     if (inProtectedRegion && protectedStart !== -1) {
       // Get indentation from protected start line
       const startLine = lines[protectedStart];
-      const indentation = startLine.match(/^(\s*)/)?.[1] || '';
-      const indentedEndMarker = indentation + languageSettings.endMarkerTemplate;
+      const indentation = startLine.match(/^(\s*)/)?.[1] || "";
+      const indentedEndMarker =
+        indentation + languageSettings.endMarkerTemplate;
 
-      edits.push(vscode.TextEdit.insert(
-        new vscode.Position(lines.length, 0),
-        `\n${indentedEndMarker}\n`
-      ));
+      edits.push(
+        vscode.TextEdit.insert(
+          new vscode.Position(lines.length, 0),
+          `\n${indentedEndMarker}\n`,
+        ),
+      );
     }
 
     return edits;

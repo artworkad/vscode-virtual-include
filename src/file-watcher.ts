@@ -44,8 +44,8 @@ export class FileWatcher {
     const watcher = vscode.workspace.createFileSystemWatcher(
       new vscode.RelativePattern(
         path.dirname(sourcePath),
-        path.basename(sourcePath)
-      )
+        path.basename(sourcePath),
+      ),
     );
 
     // Handle file changes
@@ -60,7 +60,7 @@ export class FileWatcher {
     watcher.onDidDelete((uri) => {
       if (uri.fsPath === sourcePath) {
         this._manager.uiHandler.showWarningMessage(
-          `Included file was deleted: ${sourcePath}`
+          `Included file was deleted: ${sourcePath}`,
         );
       }
     });
@@ -96,10 +96,10 @@ export class FileWatcher {
         for (const docUri of affectedDocuments) {
           try {
             const textDocument = await vscode.workspace.openTextDocument(
-              vscode.Uri.parse(docUri)
+              vscode.Uri.parse(docUri),
             );
             const editors = vscode.window.visibleTextEditors.filter(
-              (e) => e.document.uri.toString() === docUri
+              (e) => e.document.uri.toString() === docUri,
             );
 
             // If the document is open in an editor, update it
@@ -120,7 +120,7 @@ export class FileWatcher {
 
                   if (needsSave) {
                     console.log(
-                      `Auto-saving document ${docUri} that was clean before update`
+                      `Auto-saving document ${docUri} that was clean before update`,
                     );
 
                     // Wait a bit longer to ensure other processing is complete
@@ -132,7 +132,7 @@ export class FileWatcher {
                     }
                   } else {
                     console.log(
-                      `Document ${docUri} doesn't actually need saving`
+                      `Document ${docUri} doesn't actually need saving`,
                     );
                   }
                 } catch (error) {
@@ -164,7 +164,7 @@ export class FileWatcher {
    * @returns Promise<boolean> True if the document needs saving, false otherwise
    */
   private async _isActuallyDirty(
-    document: vscode.TextDocument
+    document: vscode.TextDocument,
   ): Promise<boolean> {
     try {
       // Get the on-disk content

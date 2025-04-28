@@ -1,16 +1,16 @@
-import * as vscode from 'vscode';
-import { DocumentProcessor } from './document-processor';
-import { FileWatcher } from './file-watcher';
-import { EditProtection } from './edit-protection';
-import { UIHandler } from './ui-handler';
-import { Constants } from './constants';
-import { StatusBarManager } from './status-bar';
-import { DiagnosticsManager } from './diagnostics';
+import * as vscode from "vscode";
+import { DocumentProcessor } from "./document-processor";
+import { FileWatcher } from "./file-watcher";
+import { EditProtection } from "./edit-protection";
+import { UIHandler } from "./ui-handler";
+import { Constants } from "./constants";
+import { StatusBarManager } from "./status-bar";
+import { DiagnosticsManager } from "./diagnostics";
 
 /**
  * The virtual-include-manager module serves as the central coordinator for the entire Virtual Include extension.
- * It acts as the core controller of the extension, coordinating all other components and maintaining shared state. 
- * It serves as the glue between different modules and provides a clean interface for extension-wide operations. 
+ * It acts as the core controller of the extension, coordinating all other components and maintaining shared state.
+ * It serves as the glue between different modules and provides a clean interface for extension-wide operations.
  */
 export class VirtualIncludeManager implements vscode.Disposable {
   private _documentProcessor: DocumentProcessor;
@@ -23,7 +23,8 @@ export class VirtualIncludeManager implements vscode.Disposable {
 
   // Maps to track includes and relationships
   private _documentIncludes: Map<string, Map<number, string>> = new Map();
-  private _documentWatchers: Map<string, vscode.FileSystemWatcher[]> = new Map();
+  private _documentWatchers: Map<string, vscode.FileSystemWatcher[]> =
+    new Map();
   private _sourceToDocuments: Map<string, Set<string>> = new Map();
 
   // Flag to temporarily disable edit protection during programmatic updates
@@ -43,7 +44,7 @@ export class VirtualIncludeManager implements vscode.Disposable {
 
   /**
    * Called after construction to set up the manager:
-   * 
+   *
    * 1. Delegates to _registerEventHandlers to set up event listeners
    * 2. Separating initialization from construction allows for better testing and control
    */
@@ -53,13 +54,13 @@ export class VirtualIncludeManager implements vscode.Disposable {
 
   /**
    * Called at startup to process all open documents:
-   * 
+   *
    * 1. Gets all text documents from VSCode workspace
    * 2. Filters for file-scheme documents (excluding things like settings files)
    * 3. Finds editors associated with each document
    * 4. Processes each document that has an editor
    * 5. Also specifically processes the active editor as a fallback
-   * 
+   *
    * @returns Promise<void>
    */
   public async processAllOpenDocuments(): Promise<void> {
@@ -69,11 +70,11 @@ export class VirtualIncludeManager implements vscode.Disposable {
 
     // Process each document that has an editor
     for (const document of documents) {
-      if (document.uri.scheme === 'file') {
+      if (document.uri.scheme === "file") {
         console.log(`Processing document: ${document.uri}`);
 
         const editors = vscode.window.visibleTextEditors.filter(
-          e => e.document.uri.toString() === document.uri.toString()
+          (e) => e.document.uri.toString() === document.uri.toString(),
         );
 
         if (editors.length > 0) {
@@ -95,17 +96,19 @@ export class VirtualIncludeManager implements vscode.Disposable {
 
   /**
    * Special method that preserves a document's "clean" state:
-   * 
+   *
    * 1. Saves the document's initial dirty state
    * 2. Processes the document
    * 3. If the document wasn't dirty before but is now, saves it to restore its clean state
    * 4. Uses a timeout to ensure edits are fully applied before saving
    * 5. Handles errors and reports them via the UI handler
-   * 
-   * @param editor 
+   *
+   * @param editor
    * @return Promise<void>
    */
-  public async processDocumentWithoutDirtyState(editor: vscode.TextEditor): Promise<void> {
+  public async processDocumentWithoutDirtyState(
+    editor: vscode.TextEditor,
+  ): Promise<void> {
     try {
       // Save the document's current dirty state
       const wasDirty = editor.document.isDirty;
@@ -132,7 +135,7 @@ export class VirtualIncludeManager implements vscode.Disposable {
 
   /**
    * Delegates to the DocumentProcessor to process virtual includes in a document.
-   * 
+   *
    * @param editor
    * @return Promise<void
    */
@@ -166,7 +169,7 @@ export class VirtualIncludeManager implements vscode.Disposable {
 
   /**
    * Register event handlers:
-   * 
+   *
    * 1. Sets up event handlers for VSCode events
    * 2. Creates handlers for document open, save, change, and editor change events
    * 3. Registers a handler for processing documents before saving
@@ -175,87 +178,105 @@ export class VirtualIncludeManager implements vscode.Disposable {
    */
   private _registerEventHandlers(): void {
     // Event handler for text document open
-    const onDocumentOpen = vscode.workspace.onDidOpenTextDocument(async document => {
-      try {
-        const editors = vscode.window.visibleTextEditors.filter(e => e.document === document);
-        for (const editor of editors) {
-          await this.processDocumentWithoutDirtyState(editor);
+    const onDocumentOpen = vscode.workspace.onDidOpenTextDocument(
+      async (document) => {
+        try {
+          const editors = vscode.window.visibleTextEditors.filter(
+            (e) => e.document === document,
+          );
+          for (const editor of editors) {
+            await this.processDocumentWithoutDirtyState(editor);
+          }
+        } catch (error) {
+          console.error(`Error processing document on open: ${error}`);
         }
-      } catch (error) {
-        console.error(`Error processing document on open: ${error}`);
-      }
-    });
+      },
+    );
 
     // Event handler for text document save
-    const onDocumentSave = vscode.workspace.onDidSaveTextDocument(async document => {
-      try {
-        const editors = vscode.window.visibleTextEditors.filter(e => e.document === document);
-        for (const editor of editors) {
-          await this.processDocument(editor);
+    const onDocumentSave = vscode.workspace.onDidSaveTextDocument(
+      async (document) => {
+        try {
+          const editors = vscode.window.visibleTextEditors.filter(
+            (e) => e.document === document,
+          );
+          for (const editor of editors) {
+            await this.processDocument(editor);
+          }
+        } catch (error) {
+          console.error(`Error processing document on save: ${error}`);
         }
-      } catch (error) {
-        console.error(`Error processing document on save: ${error}`);
-      }
-    });
+      },
+    );
 
     // Event handler for text document changes - detect virtual include directive as you type
-    const onDocumentChange = vscode.workspace.onDidChangeTextDocument(async e => {
-      try {
-        // Skip non-file documents
-        if (e.document.uri.scheme !== 'file') {
-          return;
-        }
-
-        // Check if any of the changes might be creating a virtual include directive
-        let mightHaveInclude = false;
-
-        for (const change of e.contentChanges) {
-          // If it's a short change that might contain the start of a virtual include directive
-          if (change.text.includes('#') || change.text.includes('virtualInclude') || change.text.includes('"')) {
-            mightHaveInclude = true;
-            break;
+    const onDocumentChange = vscode.workspace.onDidChangeTextDocument(
+      async (e) => {
+        try {
+          // Skip non-file documents
+          if (e.document.uri.scheme !== "file") {
+            return;
           }
-        }
 
-        if (mightHaveInclude) {
-          // Check the current line for the complete directive
-          const editor = vscode.window.visibleTextEditors.find(
-            editor => editor.document === e.document
-          );
+          // Check if any of the changes might be creating a virtual include directive
+          let mightHaveInclude = false;
 
-          if (editor) {
-            const document = editor.document;
-            const cursorPos = editor.selection.active;
-            const currentLine = document.lineAt(cursorPos.line).text;
-
-            // If the current line has a complete virtual include directive
-            if (Constants.VIRTUAL_INCLUDE_REGEX.test(currentLine)) {
-              // Add a small delay to allow typing to complete
-              setTimeout(async () => {
-                await this.processDocument(editor);
-              }, 100);
+          for (const change of e.contentChanges) {
+            // If it's a short change that might contain the start of a virtual include directive
+            if (
+              change.text.includes("#") ||
+              change.text.includes("virtualInclude") ||
+              change.text.includes('"')
+            ) {
+              mightHaveInclude = true;
+              break;
             }
           }
-        } else {
-          // Check for edits in protected regions
-          await this._editProtection.handleProtectedEdits(e);
+
+          if (mightHaveInclude) {
+            // Check the current line for the complete directive
+            const editor = vscode.window.visibleTextEditors.find(
+              (editor) => editor.document === e.document,
+            );
+
+            if (editor) {
+              const document = editor.document;
+              const cursorPos = editor.selection.active;
+              const currentLine = document.lineAt(cursorPos.line).text;
+
+              // If the current line has a complete virtual include directive
+              if (Constants.VIRTUAL_INCLUDE_REGEX.test(currentLine)) {
+                // Add a small delay to allow typing to complete
+                setTimeout(async () => {
+                  await this.processDocument(editor);
+                }, 100);
+              }
+            }
+          } else {
+            // Check for edits in protected regions
+            await this._editProtection.handleProtectedEdits(e);
+          }
+        } catch (error) {
+          console.error(`Error processing document changes: ${error}`);
         }
-      } catch (error) {
-        console.error(`Error processing document changes: ${error}`);
-      }
-    });
+      },
+    );
 
     // Event handler for active editor change
-    const onActiveEditorChange = vscode.window.onDidChangeActiveTextEditor(async editor => {
-      if (editor) {
-        await this.processDocumentWithoutDirtyState(editor);
-      }
-    });
+    const onActiveEditorChange = vscode.window.onDidChangeActiveTextEditor(
+      async (editor) => {
+        if (editor) {
+          await this.processDocumentWithoutDirtyState(editor);
+        }
+      },
+    );
 
     // Also need to add a handler for 'onWillSaveTextDocument' to fix any incomplete regions
-    const onWillSaveTextDocument = vscode.workspace.onWillSaveTextDocument(e => {
-      e.waitUntil(this._editProtection.preventProtectedEdits(e.document));
-    });
+    const onWillSaveTextDocument = vscode.workspace.onWillSaveTextDocument(
+      (e) => {
+        e.waitUntil(this._editProtection.preventProtectedEdits(e.document));
+      },
+    );
 
     // Add all disposables
     this._disposables.push(
@@ -263,13 +284,13 @@ export class VirtualIncludeManager implements vscode.Disposable {
       onDocumentSave,
       onDocumentChange,
       onActiveEditorChange,
-      onWillSaveTextDocument
+      onWillSaveTextDocument,
     );
   }
 
   /**
    * Provide controlled access to internal state and components. Allow components to access shared state
-   * without exposing direct references. Enable components to use each other's functionality while 
+   * without exposing direct references. Enable components to use each other's functionality while
    * maintaining encapsulation.
    */
 
@@ -311,7 +332,7 @@ export class VirtualIncludeManager implements vscode.Disposable {
 
   /**
    * Clean up resources
-   * 
+   *
    * 1. Implements the vscode.Disposable interface
    * 2. Cleans up all resources when the extension is deactivated
    * 3. Disposes of all file watchers
