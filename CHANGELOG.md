@@ -18,6 +18,8 @@ and this project adheres to
 ### Added
 
 - Added Prettier configuration and applied format to all files
+- Added cross-language include support for including content in different
+  languages
 
 ## [1.0.1] - 2025-04-25
 

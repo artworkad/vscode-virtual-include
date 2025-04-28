@@ -36,6 +36,8 @@ export class Constants {
   public static readonly CONFIG_AUTO_PROCESS = "autoProcess";
   public static readonly CONFIG_START_MARKER = "startMarker";
   public static readonly CONFIG_END_MARKER = "endMarker";
+  public static readonly CONFIG_LANGUAGE_OVERRIDES = "languageOverrides";
+  public static readonly CONFIG_DETECT_FROM_EXTENSION = "detectFromExtension";
 
   /**
    * Retrieves the configured start marker or uses default

@@ -4,7 +4,7 @@
   "description": "Include content from other files with automatic updates and edit protection",
   "icon": "icon.png",
   "publisher": "artworkad",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "repository": {
     "type": "git",
     "url": "https://github.com/artworkad/vscode-virtual-include.git"
@@ -90,6 +90,37 @@
           "type": "string",
           "default": "#",
           "description": "Default comment style when language-specific is not defined"
+        },
+        "virtualInclude.detectFromExtension": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically detect language for includes based on file extension"
+        },
+        "virtualInclude.languageOverrides": {
+          "type": "array",
+          "default": [],
+          "description": "Configuration for special sections that should use a different language's comment style",
+          "items": {
+            "type": "object",
+            "properties": {
+              "fileType": {
+                "type": "string",
+                "description": "The language ID of the file containing special sections"
+              },
+              "pattern": {
+                "type": "string",
+                "description": "Regex pattern to match the start of a special section"
+              },
+              "commentStyle": {
+                "type": "string",
+                "description": "Comment style to use inside this section"
+              },
+              "continueUntil": {
+                "type": "string",
+                "description": "Regex pattern to match the end of a special section"
+              }
+            }
+          }
         }
       }
     }

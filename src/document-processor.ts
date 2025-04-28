@@ -80,10 +80,22 @@ export class DocumentProcessor {
       // First pass: identify all virtual includes and their current state
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        const match = line.match(languageSettings.includeDirectivePattern);
+        // Get language settings specific to this context
+        const contextAwareSettings = LanguageService.getContextAwareSettings({
+          document,
+          lineNumber: i,
+          line,
+        });
+
+        // Try to match the include directive
+        const match = line.match(contextAwareSettings.includeDirectivePattern);
 
         if (match) {
-          const filePath = match[1];
+          // Check first for the override pattern with 'with' syntax
+          const overrideMatch = line.match(
+            LanguageService.COMMENT_OVERRIDE_REGEX,
+          );
+          const filePath = overrideMatch ? overrideMatch[1] : match[1];
 
           if (this._isSelfInclude(document, filePath)) {
             // Log the issue
@@ -121,10 +133,21 @@ export class DocumentProcessor {
               // Check if already expanded
               const nextLineIndex = i + 1;
 
+              // Get the language settings appropriate for this include
+              const contextAwareSettings =
+                LanguageService.getContextAwareSettings({
+                  document,
+                  lineNumber: i,
+                  line,
+                  includedFilePath: resolvedPath,
+                });
+
               if (
                 nextLineIndex < lines.length &&
-                lines[nextLineIndex].trim() ===
-                  languageSettings.startMarkerTemplate.trim()
+                (lines[nextLineIndex].trim() ===
+                  languageSettings.startMarkerTemplate.trim() ||
+                  lines[nextLineIndex].trim() ===
+                    contextAwareSettings.startMarkerTemplate.trim())
               ) {
                 // Find the end marker
                 let endLine = -1;
@@ -132,7 +155,9 @@ export class DocumentProcessor {
                 for (let j = nextLineIndex + 1; j < lines.length; j++) {
                   if (
                     lines[j].trim() ===
-                    languageSettings.endMarkerTemplate.trim()
+                      languageSettings.endMarkerTemplate.trim() ||
+                    lines[j].trim() ===
+                      contextAwareSettings.endMarkerTemplate.trim()
                   ) {
                     endLine = j;
                     break;
@@ -335,25 +360,47 @@ export class DocumentProcessor {
           indentedContent,
           languageSettings,
         );
+        // For the resolved path, we need to extract it from the filePath in the include line
+        // Extract the include path from the line
+        const includePathMatch = includeLine.match(
+          /virtualInclude\s+["'](.+?)["']/,
+        );
+        const includePath = includePathMatch ? includePathMatch[1] : "";
+        const resolvedPath = this._resolveIncludePath(document, includePath);
+
+        // Get context-aware language settings for this include
+        // We need to pass the included file path for proper language detection
+        const contextAwareSettings = LanguageService.getContextAwareSettings({
+          document,
+          lineNumber: adjustedLine,
+          line: includeLine,
+          includedFilePath: resolvedPath, // Pass the resolved path of the included file
+        });
+
         const indentedStartMarker =
-          indentation + languageSettings.startMarkerTemplate;
+          indentation + contextAwareSettings.startMarkerTemplate;
         const indentedEndMarker =
-          indentation + languageSettings.endMarkerTemplate;
+          indentation + contextAwareSettings.endMarkerTemplate;
 
         // Check if already expanded
         const nextLineIndex = adjustedLine + 1;
 
         if (
           nextLineIndex < lines.length &&
-          lines[nextLineIndex].trim() ===
-            languageSettings.startMarkerTemplate.trim()
+          (lines[nextLineIndex].trim() ===
+            languageSettings.startMarkerTemplate.trim() ||
+            lines[nextLineIndex].trim() ===
+              contextAwareSettings.startMarkerTemplate.trim())
         ) {
           // Find the LAST end marker in case there are multiple
           let endLine = -1;
           let lastEndLine = -1;
 
           for (let j = nextLineIndex + 1; j < lines.length; j++) {
-            if (lines[j].trim() === languageSettings.endMarkerTemplate.trim()) {
+            if (
+              lines[j].trim() === languageSettings.endMarkerTemplate.trim() ||
+              lines[j].trim() === contextAwareSettings.endMarkerTemplate.trim()
+            ) {
               lastEndLine = j;
             }
           }
