@@ -16,11 +16,11 @@ suite("Cross-Language Includes Tests", () => {
     const luaUri = await createTestFile(luaContent, ".lua");
     const luaPath = path.basename(luaUri.fsPath);
 
-    // Create a YAML file with Lua syntax include
+    // Create a YAML file with lua-resty-template syntax include
     const yamlContent = `template: >-
-  -- virtualInclude '${luaPath}' with '--'
+  {# virtualInclude '${luaPath}' with '{#' #}
   
-  -- This is additional Lua content`;
+  {# This is additional lua-resty-template content #}`;
     const editor = await createTestDocument(yamlContent, ".yaml");
 
     // Process the include
@@ -30,15 +30,15 @@ suite("Cross-Language Includes Tests", () => {
     const processed = await waitForVirtualIncludeProcessed(editor);
     assert.strictEqual(processed, true, "Virtual include was not processed");
 
-    // Verify the include was processed correctly using Lua comment style
+    // Verify the include was processed correctly using lua-resty-template comment style
     const text = editor.document.getText();
     assert.ok(
-      text.includes("-- virtualIncludeStart"),
-      "Lua-style start marker not found",
+      text.includes("{# virtualIncludeStart"),
+      "lua-resty-template style start marker not found",
     );
     assert.ok(
-      text.includes("-- virtualIncludeEnd"),
-      "Lua-style end marker not found",
+      text.includes("{# virtualIncludeEnd"),
+      "lua-resty-template style end marker not found",
     );
     assert.ok(
       text.includes("function transformPayload"),
@@ -106,7 +106,8 @@ suite("Cross-Language Includes Tests", () => {
           {
             fileType: "yaml",
             pattern: "template:\\s*>-",
-            commentStyle: "--",
+            commentStyle: "{#",
+            commentEnd: "#}",
             continueUntil: "^\\S",
           },
         ],
@@ -126,7 +127,7 @@ metadata:
   name: test-config
 data:
   template: >-
-    -- virtualInclude '${luaPath}'
+    {# virtualInclude '${luaPath}' #}
     
     local result = helper()`;
       const editor = await createTestDocument(yamlContent, ".yaml");
@@ -138,14 +139,31 @@ data:
       const processed = await waitForVirtualIncludeProcessed(editor);
       assert.strictEqual(processed, true, "Virtual include was not processed");
 
-      // Verify Lua-style comments were used for markers in the YAML template section
+      // Verify lua-resty-template style comments were used for markers in the YAML template section
       const text = editor.document.getText();
-      assert.ok(
-        text.includes("-- virtualIncludeStart"),
-        "Lua-style start marker not found",
+
+      // Debug: Log the entire text content
+      console.log("DOCUMENT CONTENT:\n" + text);
+      console.log(
+        "Contains {# virtualIncludeStart:",
+        text.includes("{# virtualIncludeStart"),
       );
+      console.log(
+        "Contains # virtualIncludeStart:",
+        text.includes("# virtualIncludeStart"),
+      );
+
       assert.ok(
-        !text.includes("# virtualIncludeStart"),
+        text.includes("{# virtualIncludeStart"),
+        "lua-resty-template style start marker not found",
+      );
+      // Check specifically for the YAML marker pattern at the start of a line
+      const containsYamlCommentStyle = /^(\s*)#\s*virtualIncludeStart/m.test(
+        text,
+      );
+      assert.strictEqual(
+        containsYamlCommentStyle,
+        false,
         "YAML comment style was incorrectly used",
       );
       assert.ok(

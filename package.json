@@ -124,6 +124,10 @@
                 "type": "string",
                 "description": "Comment style to use inside this section"
               },
+              "commentEnd": {
+                "type": "string",
+                "description": "End comment style to use inside this section (for paired comment styles)"
+              },
               "continueUntil": {
                 "type": "string",
                 "description": "Regex pattern to match the end of a special section"

@@ -156,6 +156,7 @@ export class LanguageService {
     fileType: string;
     pattern: string;
     commentStyle: string;
+    commentEnd?: string;
     continueUntil: string;
   }> = [
     {
@@ -166,10 +167,11 @@ export class LanguageService {
       continueUntil: "</script>",
     },
     {
-      // Lua inside YAML template sections
+      // lua-resty-template inside YAML template sections
       fileType: "yaml",
       pattern: "template:\\s*>-",
-      commentStyle: "--",
+      commentStyle: "{#",
+      commentEnd: "#}",
       continueUntil: "^\\S",
     },
   ];
@@ -177,13 +179,14 @@ export class LanguageService {
   public static getSectionOverride(
     document: vscode.TextDocument,
     lineNumber: number,
-  ): { commentStyle: string } | null {
+  ): { commentStyle: string; commentEnd?: string } | null {
     const config = Constants.getConfiguration();
     const userOverrides = config.get<
       Array<{
         fileType: string;
         pattern: string;
         commentStyle: string;
+        commentEnd?: string;
         continueUntil: string;
       }>
     >(Constants.CONFIG_LANGUAGE_OVERRIDES, []);
@@ -221,7 +224,10 @@ export class LanguageService {
           }
 
           // We're in the section
-          return { commentStyle: override.commentStyle };
+          return {
+            commentStyle: override.commentStyle,
+            commentEnd: override.commentEnd,
+          };
         }
       }
     }
@@ -258,7 +264,7 @@ export class LanguageService {
     if (sectionOverride) {
       const overrideCommentStyle = {
         start: sectionOverride.commentStyle,
-        end: "",
+        end: sectionOverride.commentEnd || "",
       };
       return this.createDefaultSettings(overrideCommentStyle);
     }

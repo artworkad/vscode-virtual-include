@@ -228,7 +228,7 @@ nested include, you should:
 Virtual Include supports including content from one language in files of another
 language. This is especially useful for:
 
-- Including Lua code in YAML files (for Kong configurations)
+- Including lua-resty-template code in YAML files (for APISIX configurations)
 - Including JavaScript in HTML files (beyond the standard `<script>` tag
   support)
 - Including SQL queries in Python, PHP, or JavaScript files
@@ -241,13 +241,13 @@ There are three ways to use cross-language includes:
 You can explicitly specify the comment style to use:
 
 ```yaml
-# In a YAML file, but we need Lua comment style
+# In a YAML file, but we need lua-resty-template comment style
 template: >-
-  -- virtualInclude 'transform.lua' with '--'
+  {# virtualInclude 'transform.lua' with '{#' #}
 ```
 
-This tells the extension to use `--` (Lua comment style) for both the include
-directive and the markers.
+This tells the extension to use `{# #}` (lua-resty-template comment style) for
+both the include directive and the markers.
 
 #### 2. Auto-Detection from File Extension
 
@@ -256,11 +256,12 @@ based on the included file's extension:
 
 ```yaml
 template: >-
-  -- virtualInclude 'transform.lua'
+  {# virtualInclude 'transform.lua' #}
 ```
 
-The `.lua` extension will be recognized, and Lua comment style (`--`) will be
-used for the markers.
+The `.lua` extension will be recognized, but since it's in a YAML template
+section, the extension will use lua-resty-template comment style (`{# #}`) for
+the markers.
 
 #### 3. Section-Based Configuration
 
@@ -272,14 +273,15 @@ different comment styles:
   {
     "fileType": "yaml",
     "pattern": "template:\\s*>-\\s*$",  // Matches YAML template: >- lines
-    "commentStyle": "--",               // Use Lua-style comments in this section
+    "commentStyle": "{#",               // Use lua-resty-template comment style start
+    "commentEnd": "#}",                 // Use lua-resty-template comment style end
     "continueUntil": "^\\S"             // Continue until a non-indented line
   }
 ]
 ```
 
-This configuration automatically applies Lua comment style to any includes found
-within YAML template sections.
+This configuration automatically applies lua-resty-template comment style to any
+includes found within YAML template sections.
 
 ### Custom Include Patterns
 
