@@ -2,7 +2,7 @@
 
 Include content from other files with automatic updates and edit protection.
 
-[![Version](https://img.shields.io/badge/version-1.0.4-blue.svg)](https://marketplace.visualstudio.com/items?itemName=artworkad.vscode-virtual-include)
+[![Version](https://img.shields.io/badge/version-1.0.5-blue.svg)](https://marketplace.visualstudio.com/items?itemName=artworkad.vscode-virtual-include)
 [![VSCode](https://img.shields.io/badge/VS%20Code-%5E1.98.0-brightgreen.svg)](https://code.visualstudio.com/)
 ![Tests](https://github.com/artworkad/vscode-virtual-include/actions/workflows/publish.yml/badge.svg)
 

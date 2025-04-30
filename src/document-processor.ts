@@ -333,20 +333,33 @@ export class DocumentProcessor {
       // We'll track line offset as we add/remove lines
       let lineOffset = 0;
 
+      // Make a copy of lines to track the document's current state as we make changes
+      let currentLines = [...lines];
+
+      console.log(
+        `Processing ${includeMap.size} includes in document ${document.uri}`,
+      );
+
       // Process each include in order (sort by line number to prevent issues)
       for (const [lineNumber, content] of [...includeMap.entries()].sort(
         (a, b) => a[0] - b[0],
       )) {
         const adjustedLine = lineNumber + lineOffset;
 
+        console.log(
+          `Processing include at original line ${lineNumber}, adjusted to ${adjustedLine} with offset ${lineOffset}`,
+        );
+
         // Make sure we're not out of bounds
-        if (adjustedLine >= lines.length) {
-          console.log(`Skipping line ${adjustedLine} (out of bounds)`);
+        if (adjustedLine >= currentLines.length) {
+          console.log(
+            `Skipping line ${adjustedLine} (out of bounds) - currentLines.length = ${currentLines.length}`,
+          );
           continue;
         }
 
         // Get indentation of the include line
-        const includeLine = lines[adjustedLine];
+        const includeLine = currentLines[adjustedLine];
         const indentation = includeLine.match(/^(\s*)/)?.[1] || "";
 
         // Apply indentation to the content and markers
@@ -360,7 +373,7 @@ export class DocumentProcessor {
           indentedContent,
           languageSettings,
         );
-        // For the resolved path, we need to extract it from the filePath in the include line
+
         // Extract the include path from the line
         const includePathMatch = includeLine.match(
           /virtualInclude\s+["'](.+?)["']/,
@@ -369,12 +382,11 @@ export class DocumentProcessor {
         const resolvedPath = this._resolveIncludePath(document, includePath);
 
         // Get context-aware language settings for this include
-        // We need to pass the included file path for proper language detection
         const contextAwareSettings = LanguageService.getContextAwareSettings({
           document,
           lineNumber: adjustedLine,
           line: includeLine,
-          includedFilePath: resolvedPath, // Pass the resolved path of the included file
+          includedFilePath: resolvedPath,
         });
 
         const indentedStartMarker =
@@ -385,65 +397,103 @@ export class DocumentProcessor {
         // Check if already expanded
         const nextLineIndex = adjustedLine + 1;
 
-        if (
-          nextLineIndex < lines.length &&
-          (lines[nextLineIndex].trim() ===
-            languageSettings.startMarkerTemplate.trim() ||
-            lines[nextLineIndex].trim() ===
-              contextAwareSettings.startMarkerTemplate.trim())
-        ) {
-          // Find the LAST end marker in case there are multiple
-          let endLine = -1;
-          let lastEndLine = -1;
+        // Check if we still have lines to process
+        if (nextLineIndex >= currentLines.length) {
+          console.log(
+            `Next line ${nextLineIndex} is beyond document end (${currentLines.length} lines)`,
+          );
+          continue;
+        }
 
-          for (let j = nextLineIndex + 1; j < lines.length; j++) {
+        const nextLineTrimmed = currentLines[nextLineIndex].trim();
+        const startMarkerTrimmed =
+          contextAwareSettings.startMarkerTemplate.trim();
+        const languageStartMarkerTrimmed =
+          languageSettings.startMarkerTemplate.trim();
+
+        if (
+          nextLineTrimmed === startMarkerTrimmed ||
+          nextLineTrimmed === languageStartMarkerTrimmed
+        ) {
+          // It's already expanded, find the end marker
+          let endLine = -1;
+
+          for (let j = nextLineIndex + 1; j < currentLines.length; j++) {
+            const lineTrimmed = currentLines[j].trim();
             if (
-              lines[j].trim() === languageSettings.endMarkerTemplate.trim() ||
-              lines[j].trim() === contextAwareSettings.endMarkerTemplate.trim()
+              lineTrimmed === contextAwareSettings.endMarkerTemplate.trim() ||
+              lineTrimmed === languageSettings.endMarkerTemplate.trim()
             ) {
-              lastEndLine = j;
+              endLine = j;
+              break;
             }
           }
 
-          // Use the last end marker we found, or -1 if none found
-          endLine = lastEndLine;
+          console.log(
+            `Found existing include block from line ${nextLineIndex} to ${endLine}`,
+          );
 
           // Complete replacement - always replace the ENTIRE include section (start marker through end marker)
-          // This is critical to prevent duplicate markers and ensure clean updates
           const workspaceEdit = new vscode.WorkspaceEdit();
 
           if (endLine !== -1) {
             // Found start and end markers - replace the entire block
-            const startPos = new vscode.Position(nextLineIndex, 0); // Include the start marker
-            const endPos = new vscode.Position(endLine + 1, 0); // Include the end marker (to next line)
+            const startPos = new vscode.Position(nextLineIndex, 0);
+            const endPos = new vscode.Position(endLine + 1, 0);
+
+            const newContent = `${indentedStartMarker}\n${indentedContent}\n${indentedEndMarker}\n`;
 
             // Replace with fresh markers and content
             workspaceEdit.replace(
               document.uri,
               new vscode.Range(startPos, endPos),
-              `${indentedStartMarker}\n${indentedContent}\n${indentedEndMarker}\n`,
+              newContent,
             );
 
             // Apply the edit
             await vscode.workspace.applyEdit(workspaceEdit);
 
-            // Update line offset - should remain the same since we're replacing whole block
+            // Calculate how many lines were in the old content vs new content
+            const oldLineCount = endLine + 1 - nextLineIndex;
+            const newLineCount = newContent.split("\n").length - 1; // -1 because the last newline doesn't add a line
+
+            // Update our tracking array of current lines
+            const newContentLines = newContent.split("\n");
+            if (newContentLines[newContentLines.length - 1] === "") {
+              newContentLines.pop(); // Remove empty last line
+            }
+
+            // Replace the content in our tracking array
+            currentLines.splice(
+              nextLineIndex,
+              oldLineCount,
+              ...newContentLines,
+            );
+
+            // Update line offset
+            const lineDifference = newLineCount - oldLineCount;
+            lineOffset += lineDifference;
+
             console.log(
-              `Completely replaced include block from line ${nextLineIndex} to ${endLine}`,
+              `Replaced include block. Line difference: ${lineDifference}, new offset: ${lineOffset}`,
             );
           } else {
             // Start marker exists but end marker is missing
             console.log(
-              `End marker missing for include at line ${adjustedLine}, replacing section`,
+              `End marker missing for include at line ${adjustedLine}`,
             );
 
             // Find a reasonable place to end our replacement (next 20 lines max)
-            const maxLines = Math.min(lines.length, nextLineIndex + 20);
+            const maxLines = Math.min(currentLines.length, nextLineIndex + 20);
             let replacementEndLine = nextLineIndex + 1;
 
             // Find the next include directive as a potential boundary
             for (let j = nextLineIndex + 1; j < maxLines; j++) {
-              if (lines[j].match(languageSettings.includeDirectivePattern)) {
+              if (
+                currentLines[j].match(
+                  contextAwareSettings.includeDirectivePattern,
+                )
+              ) {
                 replacementEndLine = j;
                 break;
               }
@@ -451,32 +501,51 @@ export class DocumentProcessor {
             }
 
             // Replace from start marker to our determined endpoint
-            const startPos = new vscode.Position(nextLineIndex, 0); // Include the start marker
+            const startPos = new vscode.Position(nextLineIndex, 0);
             const endPos = new vscode.Position(replacementEndLine, 0);
+
+            const newContent = `${indentedStartMarker}\n${indentedContent}\n${indentedEndMarker}\n`;
 
             workspaceEdit.replace(
               document.uri,
               new vscode.Range(startPos, endPos),
-              `${indentedStartMarker}\n${indentedContent}\n${indentedEndMarker}\n`,
+              newContent,
             );
 
             // Apply the edit
             await vscode.workspace.applyEdit(workspaceEdit);
 
+            // Calculate how many lines were in the old content vs new content
+            const oldLineCount = replacementEndLine - nextLineIndex;
+            const newLineCount = newContent.split("\n").length - 1; // -1 because the last newline doesn't add a line
+
+            // Update our tracking array of current lines
+            const newContentLines = newContent.split("\n");
+            if (newContentLines[newContentLines.length - 1] === "") {
+              newContentLines.pop(); // Remove empty last line
+            }
+
+            // Replace the content in our tracking array
+            currentLines.splice(
+              nextLineIndex,
+              oldLineCount,
+              ...newContentLines,
+            );
+
             // Update line offset
-            lineOffset +=
-              3 +
-              indentedContent.split("\n").length -
-              (replacementEndLine - nextLineIndex);
+            const lineDifference = newLineCount - oldLineCount;
+            lineOffset += lineDifference;
+
             console.log(
-              `Replaced partial include block from ${nextLineIndex} to ${replacementEndLine}`,
+              `Replaced partial include block. Line difference: ${lineDifference}, new offset: ${lineOffset}`,
             );
           }
         } else {
-          // Not expanded yet, insert new content using a WorkspaceEdit
+          // Not expanded yet, insert new content
+          console.log(`Insert new include content at line ${adjustedLine}`);
+
           const workspaceEdit = new vscode.WorkspaceEdit();
 
-          // Insert at the end of the current line - this ensures we have proper line breaks
           // Get the end of the current line
           const currentLineLength = includeLine.length;
           const endOfLine = new vscode.Position(
@@ -484,18 +553,32 @@ export class DocumentProcessor {
             currentLineLength,
           );
 
+          const newContent = `\n${indentedStartMarker}\n${indentedContent}\n${indentedEndMarker}\n`;
+
           // Insert a newline followed by our markers and content
-          workspaceEdit.insert(
-            document.uri,
-            endOfLine,
-            `\n${indentedStartMarker}\n${indentedContent}\n${indentedEndMarker}\n`,
-          );
+          workspaceEdit.insert(document.uri, endOfLine, newContent);
 
           // Apply the edit
           await vscode.workspace.applyEdit(workspaceEdit);
 
-          // Update line offset
-          lineOffset += 3 + indentedContent.split("\n").length;
+          // The new content lines
+          const newContentLines = newContent.split("\n");
+          if (newContentLines[newContentLines.length - 1] === "") {
+            newContentLines.pop(); // Remove empty last line
+          }
+
+          // Update our tracking array to maintain sync with the document
+          // We need to insert after the current line (adjustedLine)
+          currentLines.splice(adjustedLine + 1, 0, ...newContentLines.slice(1)); // Skip the first element (empty string from initial newline)
+
+          // Update line offset - add the number of lines we inserted
+          lineOffset += newContentLines.length - 1; // -1 because the first newline doesn't add a line
+
+          console.log(
+            `Inserted new include content. Added ${
+              newContentLines.length - 1
+            } lines, new offset: ${lineOffset}`,
+          );
         }
       }
     } catch (error) {
